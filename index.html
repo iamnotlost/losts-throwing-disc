@@ -53,7 +53,8 @@ code{font:500 .92em "JetBrains Mono",monospace;background:var(--raised);padding:
 nav{position:fixed;inset:0 0 auto;z-index:20;transition:background .25s,border-color .25s;border-bottom:1px solid transparent}
 nav.scrolled{background:rgb(21 22 25 / .85);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-color:var(--line)}
 nav .wrap{display:flex;align-items:center;justify-content:space-between;height:66px}
-.brand{display:flex;align-items:center;gap:14px;text-decoration:none;font:700 19px/1 var(--pixel)}
+.brand{display:flex;align-items:center;gap:14px;text-decoration:none;font:700 19px/1 var(--pixel);white-space:nowrap}
+@media (max-width:420px){.brand{font-size:16px;gap:11px}.head{--u:3.6px!important}.navlinks .btn{display:none}}
 .navlinks{display:flex;gap:2px;align-items:center}
 .navlinks a{color:var(--muted);text-decoration:none;font-size:14px;padding:12px;border-radius:8px}
 .navlinks a:hover{color:var(--text)}
@@ -224,7 +225,7 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
           <svg viewBox="0 0 24 24"><path d="M12 4v11m0 0l-4.5-4.5M12 15l4.5-4.5M5 19h14"/></svg>Download on Modrinth</a>
         <a class="btn" href="#features">See what it does</a>
       </div>
-      <p class="small">For <b>Paper 26.2</b>. Free. Click the area on the right to throw one.</p>
+      <p class="small">For <b>Paper 26.2</b>. Free. Click the empty space to throw one.</p>
     </div>
   </div>
 </header>
@@ -397,20 +398,21 @@ document.querySelectorAll(".reveal").forEach(el => io.observe(el));
   const imgs = {}; TIERS.forEach(t => { const im = new Image(); im.src = `img/${t.id}.png`; imgs[t.id] = im; });
   const brick = new Image(); brick.src = "img/mc/stone_bricks.png";
   const floor = new Image(); floor.src = "img/mc/deepslate_tiles.png";
-  let W, H, blocks = [], hand, d, trail = [], tierIdx = 4, lastInput = 0, visible = true, raf, arenaL = 0, S;
+  let W, H, blocks = [], hand, d, trail = [], tierIdx = 4, lastInput = 0, visible = true, raf, arenaL = 0, arenaT = 0, S;
   function layout(){
     const dpr = Math.min(2, devicePixelRatio||1);
     W = cv.clientWidth; H = cv.clientHeight;
     cv.width = W*dpr; cv.height = H*dpr; ctx.setTransform(dpr,0,0,dpr,0,0); ctx.imageSmoothingEnabled = false;
     const mob = W < 900;
     S = mob ? 32 : Math.max(40, Math.min(56, W/26));
-    const copyR = document.querySelector(".hero-copy").getBoundingClientRect().right - cv.getBoundingClientRect().left;
-    arenaL = mob ? 0 : Math.min(copyR + 60, W*0.6);
+    const cr = document.querySelector(".hero-copy").getBoundingClientRect(), cvr = cv.getBoundingClientRect();
+    arenaL = mob ? 0 : Math.min(cr.right - cvr.left + 60, W*0.6);
+    arenaT = mob ? Math.min(cr.bottom - cvr.top + 10, H - 200) : 0;   // phones: play area sits under the text
     const A = W - arenaL, X = f => Math.round((arenaL + A*f)/S)*S, Y = f => Math.round(H*f/S)*S;
-    hand = mob ? {x: W*0.5, y: H-70} : {x: arenaL + A*0.3, y: H*0.72};
+    hand = mob ? {x: W*0.5, y: H-60} : {x: arenaL + A*0.3, y: H*0.72};
     blocks = [];
     const add = (x,y,w,h) => blocks.push({x,y,w:w*S,h:h*S});
-    if (mob) { add(X(0.05),Y(0.62),2,1); add(X(0.7),Y(0.58),2,1); }
+    if (mob) { const by = Math.round((arenaT + (H-60-arenaT)*0.35)/S)*S; add(X(0.06),by,2,1); add(X(0.72),by+S,2,1); }
     else { add(X(0.62),Y(0.14),1,4); add(X(0.12),Y(0.2),2,1); add(X(0.86),Y(0.56),1,3); add(X(0.46),Y(0.84),3,1); add(X(0.4),Y(0.46),1,1); }
     if (!d) d = idle(); else if (d.state === "hand") { d.x = hand.x; d.y = hand.y; }
   }
@@ -432,7 +434,7 @@ document.querySelectorAll(".reveal").forEach(el => io.observe(el));
     for (let i=0;i<n;i++){
       d.x += sx; d.y += sy; d.range -= Math.hypot(sx,sy);
       if (d.x < arenaL+R){ d.x = arenaL+R; hit(1,0); return; } if (d.x > W-R){ d.x = W-R; hit(1,0); return; }
-      if (d.y < R){ d.y = R; hit(0,1); return; } if (d.y > H-R){ d.y = H-R; hit(0,1); return; }
+      if (d.y < arenaT+R){ d.y = arenaT+R; hit(0,1); return; } if (d.y > H-R){ d.y = H-R; hit(0,1); return; }
       for (const b of blocks){
         if (d.x > b.x-R && d.x < b.x+b.w+R && d.y > b.y-R && d.y < b.y+b.h+R){
           const pen = [d.x-(b.x-R), (b.x+b.w+R)-d.x, d.y-(b.y-R), (b.y+b.h+R)-d.y], k = pen.indexOf(Math.min(...pen));
@@ -468,8 +470,9 @@ document.querySelectorAll(".reveal").forEach(el => io.observe(el));
   function draw(){
     ctx.clearRect(0,0,W,H);
     // dim deepslate floor in the play area
-    const fx = Math.floor(arenaL/S)*S;
-    tile(floor, fx, 0, W-fx+S, H+S, .09);
+    const fx = Math.floor(arenaL/S)*S, fy = Math.floor(arenaT/S)*S;
+    tile(floor, fx, fy, W-fx+S, H-fy+S, .09);
+    if (arenaT){ const g = ctx.createLinearGradient(0,arenaT-10,0,arenaT+50); g.addColorStop(0,"rgba(21,22,25,1)"); g.addColorStop(1,"rgba(21,22,25,0)"); ctx.fillStyle = g; ctx.fillRect(0,0,W,arenaT+50); }
     if (arenaL){ ctx.fillStyle = "rgba(21,22,25,1)"; ctx.fillRect(0,0,arenaL,H);
       const g = ctx.createLinearGradient(arenaL-80,0,arenaL+40,0); g.addColorStop(0,"rgba(21,22,25,1)"); g.addColorStop(1,"rgba(21,22,25,0)"); ctx.fillStyle = g; ctx.fillRect(arenaL-80,0,120,H); }
     for (const b of blocks){
