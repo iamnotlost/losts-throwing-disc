@@ -47,6 +47,7 @@ code{font:500 .92em "JetBrains Mono",monospace;background:var(--raised);padding:
 .btn:active{transform:scale(.97)}
 .btn.dl{background:var(--green);color:var(--green-ink);border-color:transparent}
 .btn img{width:20px;height:20px;image-rendering:auto}
+.btn .pill{font:500 11px/1 Inter,sans-serif;color:var(--muted);background:rgb(255 255 255 / .07);border:1px solid var(--line);padding:4px 7px;border-radius:999px}
 .btn svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 
 /* ---------- nav with 3D head ---------- */
@@ -209,7 +210,7 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
       <a href="#discs">Discs</a>
       <a href="#crafting">Crafting</a>
       <a href="#setup">Setup</a>
-      <a class="btn dl" href="#" data-dl>Download</a>
+      <a class="btn dl" href="#" data-jar>Download</a>
     </div>
   </div>
 </nav>
@@ -221,11 +222,11 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
       <h1>Lost's Throwing Disc</h1>
       <p>Adds the Throwing Disc to your Paper server. Throw it, it bounces off walls and comes back to you. Five tiers, and only one of each can exist on the server.</p>
       <div class="cta">
-        <a class="btn dl" href="#" data-dl>
-          <svg viewBox="0 0 24 24"><path d="M12 4v11m0 0l-4.5-4.5M12 15l4.5-4.5M5 19h14"/></svg>Download on Modrinth</a>
-        <a class="btn" href="#features">See what it does</a>
+        <a class="btn dl" href="#" data-jar>
+          <svg viewBox="0 0 24 24"><path d="M12 4v11m0 0l-4.5-4.5M12 15l4.5-4.5M5 19h14"/></svg>Download .jar</a>
+        <a class="btn" href="#" data-modrinth>Modrinth <span class="pill">in review</span></a>
       </div>
-      <p class="small">For <b>Paper 26.2</b>. Free. Click the empty space to throw one.</p>
+      <p class="small">Version <b>1.0.0</b> for <b>Paper 26.2</b>, 45 KB. Free. Click the empty space to throw one.</p>
     </div>
   </div>
 </header>
@@ -311,9 +312,12 @@ resource-pack:
     <div class="get reveal">
       <div class="left">
         <div class="row-discs"><img src="img/copper.png" alt=""><img src="img/iron.png" alt=""><img src="img/golden.png" alt=""><img src="img/diamond.png" alt=""><img src="img/netherite.png" alt=""></div>
-        <div><h2>Get it on Modrinth</h2><p>Free, for Paper 26.2.</p></div>
+        <div><h2>Download</h2><p>Version 1.0.0 for Paper 26.2. It's in review on Modrinth, so grab the jar here for now.</p></div>
       </div>
-      <a class="btn dl" href="#" data-dl><svg viewBox="0 0 24 24"><path d="M12 4v11m0 0l-4.5-4.5M12 15l4.5-4.5M5 19h14"/></svg>Download</a>
+      <div class="cta">
+        <a class="btn dl" href="#" data-jar><svg viewBox="0 0 24 24"><path d="M12 4v11m0 0l-4.5-4.5M12 15l4.5-4.5M5 19h14"/></svg>Download .jar</a>
+        <a class="btn" href="#" data-modrinth>Modrinth <span class="pill">in review</span></a>
+      </div>
     </div>
   </div>
 </main>
@@ -327,7 +331,9 @@ resource-pack:
 
 <script>
 const MODRINTH_URL = "https://modrinth.com/plugin/losts-throwable-discs";
-document.querySelectorAll("[data-dl]").forEach(a => { a.href = MODRINTH_URL; a.target = "_blank"; a.rel = "noopener"; });
+const JAR_URL = "download/LostsThrowingDisc-1.0.0.jar";   // direct download while Modrinth reviews it
+document.querySelectorAll("[data-jar]").forEach(a => { a.href = JAR_URL; a.setAttribute("download", "LostsThrowingDisc-1.0.0.jar"); });
+document.querySelectorAll("[data-modrinth]").forEach(a => { a.href = MODRINTH_URL; a.target = "_blank"; a.rel = "noopener"; });
 const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 const TIERS = [
