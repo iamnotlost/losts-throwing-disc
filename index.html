@@ -1,0 +1,512 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Lost's Throwing Disc</title>
+<meta name="description" content="A Paper 26.2 plugin that adds the Throwing Disc. Throw it, it bounces off walls and comes back to you. Five tiers, one of each per server.">
+<meta property="og:title" content="Lost's Throwing Disc">
+<meta property="og:description" content="Adds the Throwing Disc to your Paper 26.2 server. Five tiers, one of each per server.">
+<meta property="og:image" content="img/netherite.png">
+<meta name="theme-color" content="#151619">
+<link rel="icon" type="image/png" href="img/netherite.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Pixelify+Sans:wght@500;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* plain neutral greys, like deepslate - no tint */
+  --bg:      #151619;
+  --surface: #1c1e22;
+  --raised:  #24272c;
+  --text:    #ededee;
+  --muted:   #a4a8b0;
+  --faint:   #6d727b;
+  --line:    rgb(255 255 255 / .08);
+  --line-strong: rgb(255 255 255 / .14);
+  /* the one accent: Modrinth green, only on download */
+  --green:   #1bd96a;
+  --green-ink:#0b2e18;
+  --r: 14px;
+  --ease: cubic-bezier(.2,.8,.2,1);
+  --pixel: "Pixelify Sans", Inter, sans-serif;
+  color-scheme: dark;
+}
+*{box-sizing:border-box;margin:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font:400 16px/1.6 Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+img{image-rendering:pixelated}
+a{color:inherit}
+h1,h2,h3{font-family:var(--pixel);font-weight:700;line-height:1.1;letter-spacing:.01em;text-wrap:balance}
+p{text-wrap:pretty}
+code{font:500 .92em "JetBrains Mono",monospace;background:var(--raised);padding:2px 6px;border-radius:6px}
+.wrap{max-width:1080px;margin:0 auto;padding:0 20px}
+
+.btn{display:inline-flex;align-items:center;gap:10px;min-height:46px;padding:0 20px;border-radius:10px;font:600 15px/1 Inter,sans-serif;text-decoration:none;cursor:pointer;border:1px solid var(--line-strong);background:var(--raised);color:var(--text);transition:transform .15s var(--ease),filter .15s}
+.btn:hover{filter:brightness(1.15)}
+.btn:active{transform:scale(.97)}
+.btn.dl{background:var(--green);color:var(--green-ink);border-color:transparent}
+.btn img{width:20px;height:20px;image-rendering:auto}
+.btn svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+/* ---------- nav with 3D head ---------- */
+nav{position:fixed;inset:0 0 auto;z-index:20;transition:background .25s,border-color .25s;border-bottom:1px solid transparent}
+nav.scrolled{background:rgb(21 22 25 / .85);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-color:var(--line)}
+nav .wrap{display:flex;align-items:center;justify-content:space-between;height:66px}
+.brand{display:flex;align-items:center;gap:14px;text-decoration:none;font:700 19px/1 var(--pixel)}
+.navlinks{display:flex;gap:2px;align-items:center}
+.navlinks a{color:var(--muted);text-decoration:none;font-size:14px;padding:12px;border-radius:8px}
+.navlinks a:hover{color:var(--text)}
+.navlinks .btn{min-height:38px;padding:0 14px;margin-left:8px;font-size:14px}
+@media (max-width:780px){.navlinks a:not(.btn){display:none}}
+
+/* head: a 8x8x8 cube textured straight from the skin, hat layer 9/8 bigger */
+.head{--u:4.25px;--s:calc(var(--u)*8);width:var(--s);height:var(--s);perspective:400px;flex:none}
+.head,.head .cube{display:block}
+.head .cube{position:relative;width:100%;height:100%;transform-style:preserve-3d;transform:rotateX(-22deg) rotateY(-35deg);transition:transform .6s var(--ease)}
+.brand:hover .head .cube{transform:rotateX(-22deg) rotateY(325deg)}
+.head .layer{position:absolute;inset:0;transform-style:preserve-3d}
+.head .hat{transform:scale3d(1.125,1.125,1.125)}
+.head .f{position:absolute;inset:0;background-image:url(img/skin.png);background-size:calc(var(--u)*64) calc(var(--u)*64);image-rendering:pixelated;backface-visibility:hidden}
+.f.front {transform:translateZ(calc(var(--s)/2));           background-position:calc(var(--u)*-8)  calc(var(--u)*-8)}
+.f.back  {transform:rotateY(180deg) translateZ(calc(var(--s)/2)); background-position:calc(var(--u)*-24) calc(var(--u)*-8)}
+.f.left  {transform:rotateY(-90deg) translateZ(calc(var(--s)/2)); background-position:0 calc(var(--u)*-8)}
+.f.right {transform:rotateY(90deg) translateZ(calc(var(--s)/2));  background-position:calc(var(--u)*-16) calc(var(--u)*-8)}
+.f.top   {transform:rotateX(90deg) translateZ(calc(var(--s)/2));  background-position:calc(var(--u)*-8)  0}
+.f.bottom{transform:rotateX(-90deg) translateZ(calc(var(--s)/2)); background-position:calc(var(--u)*-16) 0}
+.hat .f.front {background-position:calc(var(--u)*-40) calc(var(--u)*-8)}
+.hat .f.back  {background-position:calc(var(--u)*-56) calc(var(--u)*-8)}
+.hat .f.left  {background-position:calc(var(--u)*-32) calc(var(--u)*-8)}
+.hat .f.right {background-position:calc(var(--u)*-48) calc(var(--u)*-8)}
+.hat .f.top   {background-position:calc(var(--u)*-40) 0}
+.hat .f.bottom{background-position:calc(var(--u)*-48) 0}
+.hat .f{backface-visibility:visible}
+
+/* ---------- hero ---------- */
+.hero{position:relative;min-height:100vh;min-height:100dvh;display:flex;align-items:center;overflow:hidden;isolation:isolate}
+#arena{position:absolute;inset:0;width:100%;height:100%;z-index:-1;cursor:crosshair}
+.hero::after{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;background:linear-gradient(to top,var(--bg),transparent 18%)}
+.hero-copy{max-width:520px;padding:110px 0 70px;pointer-events:none}
+.hero-copy > *{pointer-events:auto}
+.hero h1{font-size:clamp(44px,6.4vw,76px);margin-bottom:20px;text-shadow:4px 4px 0 rgb(0 0 0 / .45)}
+.hero p{font-size:18px;color:var(--muted);max-width:44ch;margin-bottom:30px}
+.cta{display:flex;gap:12px;flex-wrap:wrap}
+.small{margin-top:18px;color:var(--faint);font-size:14px}
+.small b{color:var(--muted);font-weight:500}
+@media (max-width:900px){.hero{align-items:flex-start}.hero-copy{padding-top:100px}}
+
+section{padding:110px 0 0}
+.sec-title{font-size:clamp(30px,4vw,44px);margin-bottom:12px;text-shadow:3px 3px 0 rgb(0 0 0 / .4)}
+.sec-sub{color:var(--muted);font-size:17px;max-width:60ch;margin-bottom:40px}
+
+/* ---------- what it does ---------- */
+.feats{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.feat{display:grid;grid-template-columns:48px 1fr;gap:16px;align-items:start;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:20px}
+.feat .ico{width:48px;height:48px;border-radius:10px;background:var(--raised);display:grid;place-items:center;border:1px solid var(--line)}
+.feat .ico img{width:32px;height:32px}
+.feat h3{font-size:20px;margin-bottom:4px}
+.feat p{color:var(--muted);font-size:15px}
+@media (max-width:720px){.feats{grid-template-columns:1fr}}
+
+/* ---------- discs + in-game tooltips ---------- */
+.discs{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+.disc{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:20px 14px 16px;display:flex;flex-direction:column;align-items:center;transition:transform .25s var(--ease),border-color .25s}
+.disc:hover{transform:translateY(-4px);border-color:var(--line-strong)}
+.disc > img{width:72px;height:72px;margin:8px 0 18px;transition:transform .7s var(--ease)}
+.disc:hover > img{transform:rotate(360deg)}
+/* Minecraft item tooltip */
+.tip{width:100%;font:500 12.5px/1.45 var(--pixel);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:rgb(16 0 16 / .94);padding:7px 9px;border-radius:3px;
+  box-shadow:inset 0 0 0 1px rgb(16 0 16),inset 0 0 0 2px rgb(80 0 255 / .35);color:#aaa}
+.tip .n{color:#fff}
+.tip .g{color:#00aa00}
+.disc dl{width:100%;display:grid;grid-template-columns:1fr auto;gap:2px 8px;font-size:13px;margin-top:14px;padding:0 4px}
+.disc dt{color:var(--faint)} .disc dd{color:var(--muted);text-align:right;font-variant-numeric:tabular-nums}
+@media (max-width:980px){.discs{grid-template-columns:repeat(3,1fr)}}
+@media (max-width:600px){.discs{grid-template-columns:repeat(2,1fr)}}
+
+/* ---------- crafting: vanilla inventory look ---------- */
+.craft-wrap{display:grid;grid-template-columns:auto 1fr;gap:28px;align-items:start}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
+.tab{min-height:44px;display:inline-flex;align-items:center;gap:8px;padding:0 14px 0 10px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--muted);font:600 14px/1 Inter,sans-serif;cursor:pointer;transition:background .15s,color .15s,border-color .15s}
+.tab img{width:24px;height:24px}
+.tab:hover{color:var(--text)}
+.tab[aria-selected=true]{background:var(--raised);color:var(--text);border-color:var(--line-strong)}
+.gui{--p:4px;display:inline-block;background:#c6c6c6;padding:14px 16px 18px;border-radius:6px;
+  box-shadow:0 0 0 2px #000,inset 4px 4px 0 #fff,inset -4px -4px 0 #555;image-rendering:pixelated}
+.gui .title{font:500 18px/1 var(--pixel);color:#404040;margin:2px 0 12px}
+.gui .row{display:flex;align-items:center;gap:26px}
+.grid{display:grid;grid-template-columns:repeat(3,54px)}
+.grid.smith{grid-template-columns:repeat(3,54px);gap:6px}
+.slot{width:54px;height:54px;background:#8b8b8b;box-shadow:inset 3px 3px 0 #373737,inset -3px -3px 0 #fff;display:grid;place-items:center}
+.slot img{width:40px;height:40px}
+.slot.big{width:72px;height:72px}
+.slot.big img{width:48px;height:48px}
+.slot img.in{animation:in .3s var(--ease) both}
+@keyframes in{from{transform:scale(.6);opacity:0}to{transform:none;opacity:1}}
+.gui .arrow{width:44px;height:32px}
+.recipe-text{margin-top:16px;color:var(--muted);font-size:15px;max-width:52ch}
+.rules{list-style:none;padding:0;display:grid;gap:14px}
+.rules li{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px 18px}
+.rules b{display:block;margin-bottom:2px}
+.rules span{color:var(--muted);font-size:15px}
+@media (max-width:900px){.craft-wrap{grid-template-columns:1fr}}
+@media (max-width:440px){.grid{grid-template-columns:repeat(3,44px)}.slot{width:44px;height:44px}.slot img{width:32px;height:32px}.gui .row{gap:14px}.slot.big{width:58px;height:58px}}
+
+/* ---------- chat preview ---------- */
+.chat{margin-top:14px;background:rgb(0 0 0 / .45);border-radius:6px;padding:10px 12px;font:500 15px/1.6 var(--pixel)}
+.chat .gold{color:#ffaa00} .chat .gray{color:#aaa}
+
+/* ---------- commands / config ---------- */
+.cmds{display:grid;gap:8px}
+.cmd{display:flex;align-items:center;gap:16px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:6px 6px 6px 18px}
+.cmd code{background:none;padding:0;white-space:nowrap;color:var(--text)}
+.cmd p{color:var(--muted);font-size:14px;flex:1;min-width:0}
+.copy{flex:none;min-width:44px;height:44px;border-radius:8px;border:1px solid var(--line);background:var(--raised);color:var(--muted);cursor:pointer;font:500 12px/1 Inter,sans-serif;padding:0 10px}
+.copy:hover{color:var(--text)}
+.copy.done{color:var(--green)}
+@media (max-width:700px){.cmd{flex-wrap:wrap}.cmd p{flex-basis:100%;order:3;padding-bottom:8px}.cmd code{flex:1;overflow-x:auto}}
+pre{margin-top:12px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:20px 22px;overflow-x:auto;font:500 13.5px/1.75 "JetBrains Mono",monospace;color:var(--muted)}
+pre .c{color:var(--faint)} pre .v{color:var(--text)}
+
+/* ---------- faq ---------- */
+.faq{display:grid;gap:8px;max-width:760px}
+details{background:var(--surface);border:1px solid var(--line);border-radius:12px}
+summary{list-style:none;cursor:pointer;padding:18px 20px;font-weight:600;display:flex;justify-content:space-between;gap:16px;align-items:center}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";font:500 22px/1 Inter;color:var(--faint);transition:transform .25s var(--ease)}
+details[open] summary::after{transform:rotate(45deg)}
+details p{padding:0 20px 18px;color:var(--muted)}
+
+/* ---------- download block / footer ---------- */
+.get{margin-top:110px;background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:44px 32px;display:flex;align-items:center;justify-content:space-between;gap:28px;flex-wrap:wrap}
+.get .left{display:flex;align-items:center;gap:22px}
+.get .row-discs{display:flex;gap:4px}
+.get .row-discs img{width:36px}
+.get h2{font-size:30px;margin-bottom:4px}
+.get p{color:var(--muted)}
+footer{padding:40px 0 48px;color:var(--faint);font-size:13px}
+footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+
+.reveal{opacity:0;transform:translateY(14px);transition:opacity .5s var(--ease),transform .5s var(--ease);transition-delay:calc(var(--i,0)*60ms)}
+.reveal.in{opacity:1;transform:none}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition-duration:1ms!important;transition-delay:0ms!important}.reveal{opacity:1;transform:none}html{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+
+<nav id="nav">
+  <div class="wrap">
+    <a class="brand" href="#top" aria-label="Lost's Throwing Disc, back to top">
+      <span class="head" aria-hidden="true"><span class="cube">
+        <span class="layer"><i class="f front"></i><i class="f back"></i><i class="f left"></i><i class="f right"></i><i class="f top"></i><i class="f bottom"></i></span>
+        <span class="layer hat"><i class="f front"></i><i class="f back"></i><i class="f left"></i><i class="f right"></i><i class="f top"></i><i class="f bottom"></i></span>
+      </span></span>
+      Lost's Throwing Disc
+    </a>
+    <div class="navlinks">
+      <a href="#features">Features</a>
+      <a href="#discs">Discs</a>
+      <a href="#crafting">Crafting</a>
+      <a href="#setup">Setup</a>
+      <a class="btn dl" href="#" data-dl>Download</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero" id="top">
+  <canvas id="arena" aria-label="Demo: click to throw a disc. It bounces off the blocks and comes back."></canvas>
+  <div class="wrap">
+    <div class="hero-copy">
+      <h1>Lost's Throwing Disc</h1>
+      <p>Adds the Throwing Disc to your Paper server. Throw it, it bounces off walls and comes back to you. Five tiers, and only one of each can exist on the server.</p>
+      <div class="cta">
+        <a class="btn dl" href="#" data-dl>
+          <svg viewBox="0 0 24 24"><path d="M12 4v11m0 0l-4.5-4.5M12 15l4.5-4.5M5 19h14"/></svg>Download on Modrinth</a>
+        <a class="btn" href="#features">See what it does</a>
+      </div>
+      <p class="small">For <b>Paper 26.2</b>. Free. Click the area on the right to throw one.</p>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section id="features">
+    <div class="wrap">
+      <h2 class="sec-title reveal">What it does</h2>
+      <p class="sec-sub reveal">Right-click to throw. No cooldown, no durability, no enchants.</p>
+      <div class="feats">
+        <div class="feat reveal" style="--i:0"><div class="ico"><img src="img/iron.png" alt=""></div><div><h3>Flies straight</h3><p>Goes where your crosshair is. No gravity, no drop, 20 blocks out.</p></div></div>
+        <div class="feat reveal" style="--i:1"><div class="ico"><img src="img/mc/iron_ingot.png" alt=""></div><div><h3>Goes through mobs</h3><p>Hits everything in a line, once going out and once coming back. Damage ignores armor.</p></div></div>
+        <div class="feat reveal" style="--i:2"><div class="ico"><img src="img/golden.png" alt=""></div><div><h3>Bounces off walls</h3><p>Comes off the wall at the same angle it hit. Each bounce makes it faster and adds 6 blocks of range.</p></div></div>
+        <div class="feat reveal" style="--i:3"><div class="ico"><img src="img/diamond.png" alt=""></div><div><h3>Comes back</h3><p>Flies straight back to the hand you threw it from. If your inventory is full, it spins around you until there's space.</p></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="discs">
+    <div class="wrap">
+      <h2 class="sec-title reveal">The discs</h2>
+      <p class="sec-sub reveal">Netherite hits the hardest and doesn't burn in lava. Golden is the fastest.</p>
+      <div class="discs" id="discGrid"></div>
+    </div>
+  </section>
+
+  <section id="crafting">
+    <div class="wrap">
+      <h2 class="sec-title reveal">Crafting</h2>
+      <p class="sec-sub reveal">Four of the material in a plus shape. Netherite is an upgrade from diamond at a smithing table.</p>
+      <div class="craft-wrap">
+        <div class="reveal">
+          <div class="tabs" role="tablist" id="tabs"></div>
+          <div class="gui" id="gui"></div>
+          <p class="recipe-text" id="recipeText"></p>
+        </div>
+        <div class="reveal" style="--i:1">
+          <ul class="rules">
+            <li><b>One of each per server</b><span>Once someone crafts the copper disc, nobody else can. Server owners can raise the limit or make it unlimited.</span></li>
+            <li><b>Lost discs free up</b><span>If a disc burns in lava, falls in the void or despawns, that tier can be crafted again.</span></li>
+            <li><b>No duping</b><span>Shift-click can't make two, crafters can't make them, and anvils don't work on them.</span></li>
+          </ul>
+          <div class="chat reveal" style="--i:2" aria-label="Example chat messages">
+            <div class="gold">The Diamond Throwing Disc has been forged by ImNotLost_.</div>
+            <div class="gray">The Copper Throwing Disc has been lost.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="setup">
+    <div class="wrap">
+      <h2 class="sec-title reveal">Setup</h2>
+      <p class="sec-sub reveal">Put the jar in your plugins folder and restart. The plugin sends its own resource pack when players join, so nobody needs mods.</p>
+      <div class="cmds" id="cmds"></div>
+      <pre class="reveal"><span class="c"># plugins/ThrowingDisc/config.yml</span>
+disc:
+  range: <span class="v">20.0</span>          <span class="c"># blocks before it turns back</span>
+  bounce-bonus: <span class="v">6.0</span>    <span class="c"># extra blocks per bounce</span>
+  max-bounces: <span class="v">6</span>
+tiers:
+  netherite: { damage: <span class="v">12.0</span>, speed: <span class="v">1.35</span> }
+resource-pack:
+  port: <span class="v">8166</span>
+  address: <span class="v">"your.server.ip"</span>   <span class="c"># needed on hosted servers</span></pre>
+    </div>
+  </section>
+
+  <section id="faq">
+    <div class="wrap">
+      <h2 class="sec-title reveal">FAQ</h2>
+      <div class="faq" style="margin-top:28px">
+        <details class="reveal"><summary>Is this the real vanilla disc?</summary><p>No, it's a recreation made from what Mojang has shown. The real one might work a bit differently when it comes out.</p></details>
+        <details class="reveal" style="--i:1"><summary>What versions does it work on?</summary><p>Paper 26.2 with Java 25. Players on older versions can join with ViaVersion, but they won't see the disc textures.</p></details>
+        <details class="reveal" style="--i:2"><summary>The textures don't show up</summary><p>On a hosted server, set <code>resource-pack.address</code> to your server's IP and give the plugin its own open port. If another plugin already hosts a pack on that port, pick a different one.</p></details>
+        <details class="reveal" style="--i:3"><summary>Can I allow more than one of each?</summary><p>Yes. <code>/disc limit 3</code> allows three of every tier, and <code>/disc limit infinite</code> removes the limit.</p></details>
+      </div>
+    </div>
+  </section>
+
+  <div class="wrap">
+    <div class="get reveal">
+      <div class="left">
+        <div class="row-discs"><img src="img/copper.png" alt=""><img src="img/iron.png" alt=""><img src="img/golden.png" alt=""><img src="img/diamond.png" alt=""><img src="img/netherite.png" alt=""></div>
+        <div><h2>Get it on Modrinth</h2><p>Free, for Paper 26.2.</p></div>
+      </div>
+      <a class="btn dl" href="#" data-dl><svg viewBox="0 0 24 24"><path d="M12 4v11m0 0l-4.5-4.5M12 15l4.5-4.5M5 19h14"/></svg>Download</a>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>Made by ImNotLost_</span>
+    <span>Not an official Minecraft product. Not approved by or associated with Mojang or Microsoft.</span>
+  </div>
+</footer>
+
+<script>
+const MODRINTH_URL = "https://modrinth.com/plugin/losts-throwable-discs";
+document.querySelectorAll("[data-dl]").forEach(a => { a.href = MODRINTH_URL; a.target = "_blank"; a.rel = "noopener"; });
+const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+const TIERS = [
+  {id:"copper",    name:"Copper",    dmg:7,  speed:1.1,  mat:"copper_ingot", matName:"copper ingots", trail:"#e07a4f"},
+  {id:"iron",      name:"Iron",      dmg:8,  speed:1.2,  mat:"iron_ingot",   matName:"iron ingots",   trail:"#d8d8d8"},
+  {id:"golden",    name:"Golden",    dmg:7,  speed:1.5,  mat:"gold_ingot",   matName:"gold ingots",   trail:"#f5cf3d"},
+  {id:"diamond",   name:"Diamond",   dmg:11, speed:1.3,  mat:"diamond",      matName:"diamonds",      trail:"#4ee6da"},
+  {id:"netherite", name:"Netherite", dmg:12, speed:1.35, mat:"netherite_ingot", matName:null,          trail:"#9c8a99"},
+];
+
+/* discs: the real in-game tooltip from the plugin */
+document.getElementById("discGrid").innerHTML = TIERS.map((t,i) => `
+  <div class="disc reveal" style="--i:${i}">
+    <img src="img/${t.id}.png" alt="${t.name} Throwing Disc">
+    <div class="tip"><div class="n">${t.name} Throwing Disc</div><div>Right-click to throw</div><div>Pierces, ricochets, returns</div><div>&nbsp;</div><div class="g">${t.dmg} Thrown Damage</div></div>
+    <dl><dt>Hearts</dt><dd>${t.dmg/2}</dd><dt>Speed</dt><dd>${Math.round(t.speed*20)} blocks/s</dd></dl>
+  </div>`).join("");
+
+/* crafting gui with real item textures */
+const mc = n => `img/mc/${n}.png`;
+const ARROW = `<svg class="arrow" viewBox="0 0 22 16" shape-rendering="crispEdges" aria-hidden="true"><path fill="#8b8b8b" d="M0 6h14V2h2v2h2v2h2v2h2v0h-2v2h-2v2h-2v2h-2v-4H0z"/></svg>`;
+const tabs = document.getElementById("tabs"), gui = document.getElementById("gui"), rtext = document.getElementById("recipeText");
+tabs.innerHTML = TIERS.map(t => `<button class="tab" role="tab" data-id="${t.id}"><img src="img/${t.id}.png" alt="">${t.name}</button>`).join("");
+const slot = (src, big) => `<div class="slot${big?" big":""}">${src?`<img class="in" src="${src}" alt="">`:""}</div>`;
+function show(id){
+  const t = TIERS.find(x => x.id === id);
+  tabs.querySelectorAll(".tab").forEach(b => b.setAttribute("aria-selected", b.dataset.id === id));
+  if (id === "netherite") {
+    gui.innerHTML = `<div class="title">Upgrade Gear</div><div class="row">
+      <div class="grid smith">${slot(mc("netherite_upgrade_smithing_template"))}${slot("img/diamond.png")}${slot(mc("netherite_ingot"))}</div>
+      ${ARROW}${slot("img/netherite.png", true)}</div>`;
+    rtext.textContent = "Smithing table: netherite upgrade template, the diamond disc and a netherite ingot. The diamond disc gets used up, so diamond stays taken.";
+  } else {
+    const g = ["",1,"",1,"",1,"",1,""].map(c => slot(c ? mc(t.mat) : "")).join("");
+    gui.innerHTML = `<div class="title">Crafting</div><div class="row"><div class="grid">${g}</div>${ARROW}${slot(`img/${t.id}.png`, true)}</div>`;
+    rtext.textContent = `4 ${t.matName} in a plus shape, with the middle empty.`;
+  }
+  gui.querySelectorAll("img.in").forEach((im,i) => im.style.animationDelay = (i*45)+"ms");
+}
+tabs.addEventListener("click", e => { const b = e.target.closest(".tab"); if (b) show(b.dataset.id); });
+show("copper");
+
+/* commands */
+const CMDS = [
+  ["/disc give <tier> [player]", "Gives a disc. These don't count toward the limit."],
+  ["/disc status", "Shows which discs exist and who crafted them."],
+  ["/disc limit <amount|infinite> [tier]", "Changes how many of each disc can exist."],
+  ["/disc reset <tier>", "Frees up a tier so it can be crafted again."],
+];
+const esc = s => s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;");
+document.getElementById("cmds").innerHTML = CMDS.map(([c,d],i)=>`<div class="cmd reveal" style="--i:${i}"><code>${esc(c)}</code><p>${d}</p><button class="copy" data-c="${esc(c)}" aria-label="Copy ${esc(c)}">Copy</button></div>`).join("");
+document.getElementById("cmds").addEventListener("click", e => {
+  const b = e.target.closest(".copy"); if (!b) return;
+  b.textContent = "Copied"; b.classList.add("done");
+  navigator.clipboard?.writeText(b.dataset.c).catch(()=>{});
+  clearTimeout(b._t); b._t = setTimeout(() => { b.textContent = "Copy"; b.classList.remove("done"); }, 1300);
+});
+
+/* nav + reveals */
+const nav = document.getElementById("nav");
+addEventListener("scroll", () => nav.classList.toggle("scrolled", scrollY > 20), {passive:true});
+const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting){ e.target.classList.add("in"); io.unobserve(e.target); } }), {threshold:.12});
+document.querySelectorAll(".reveal").forEach(el => io.observe(el));
+
+/* hero demo: stone brick walls, real reflections, faster each bounce, straight back */
+(() => {
+  const cv = document.getElementById("arena"), ctx = cv.getContext("2d");
+  const imgs = {}; TIERS.forEach(t => { const im = new Image(); im.src = `img/${t.id}.png`; imgs[t.id] = im; });
+  const brick = new Image(); brick.src = "img/mc/stone_bricks.png";
+  const floor = new Image(); floor.src = "img/mc/deepslate_tiles.png";
+  let W, H, blocks = [], hand, d, trail = [], tierIdx = 4, lastInput = 0, visible = true, raf, arenaL = 0, S;
+  function layout(){
+    const dpr = Math.min(2, devicePixelRatio||1);
+    W = cv.clientWidth; H = cv.clientHeight;
+    cv.width = W*dpr; cv.height = H*dpr; ctx.setTransform(dpr,0,0,dpr,0,0); ctx.imageSmoothingEnabled = false;
+    const mob = W < 900;
+    S = mob ? 32 : Math.max(40, Math.min(56, W/26));
+    const copyR = document.querySelector(".hero-copy").getBoundingClientRect().right - cv.getBoundingClientRect().left;
+    arenaL = mob ? 0 : Math.min(copyR + 60, W*0.6);
+    const A = W - arenaL, X = f => Math.round((arenaL + A*f)/S)*S, Y = f => Math.round(H*f/S)*S;
+    hand = mob ? {x: W*0.5, y: H-70} : {x: arenaL + A*0.3, y: H*0.72};
+    blocks = [];
+    const add = (x,y,w,h) => blocks.push({x,y,w:w*S,h:h*S});
+    if (mob) { add(X(0.05),Y(0.62),2,1); add(X(0.7),Y(0.58),2,1); }
+    else { add(X(0.62),Y(0.14),1,4); add(X(0.12),Y(0.2),2,1); add(X(0.86),Y(0.56),1,3); add(X(0.46),Y(0.84),3,1); add(X(0.4),Y(0.46),1,1); }
+    if (!d) d = idle(); else if (d.state === "hand") { d.x = hand.x; d.y = hand.y; }
+  }
+  const idle = () => ({x:hand.x, y:hand.y, vx:0, vy:0, state:"hand", spin:0, squash:0, wind:0});
+  function throwAt(tx, ty){
+    if (d.state !== "hand") return;
+    tierIdx = (tierIdx+1) % TIERS.length;
+    const dx = tx-hand.x, dy = ty-hand.y, len = Math.hypot(dx,dy)||1;
+    Object.assign(d, {state:"wind", wind:0, dirx:dx/len, diry:dy/len, speed:9*TIERS[tierIdx].speed, range:(W-arenaL)*0.9, bounces:0});
+  }
+  function hit(nx, ny){
+    if (nx) d.vx = -d.vx; if (ny) d.vy = -d.vy;         // angle in = angle out
+    d.speed = Math.min(d.speed*1.25, 26); const l = Math.hypot(d.vx,d.vy); d.vx = d.vx/l*d.speed; d.vy = d.vy/l*d.speed;
+    d.range += (W-arenaL)*0.25; d.bounces++; d.squash = 1;
+    if (d.bounces >= 6) d.state = "back";
+  }
+  function stepOut(){
+    const n = Math.ceil(d.speed/4), sx = d.vx/n, sy = d.vy/n, R = 16;
+    for (let i=0;i<n;i++){
+      d.x += sx; d.y += sy; d.range -= Math.hypot(sx,sy);
+      if (d.x < arenaL+R){ d.x = arenaL+R; hit(1,0); return; } if (d.x > W-R){ d.x = W-R; hit(1,0); return; }
+      if (d.y < R){ d.y = R; hit(0,1); return; } if (d.y > H-R){ d.y = H-R; hit(0,1); return; }
+      for (const b of blocks){
+        if (d.x > b.x-R && d.x < b.x+b.w+R && d.y > b.y-R && d.y < b.y+b.h+R){
+          const pen = [d.x-(b.x-R), (b.x+b.w+R)-d.x, d.y-(b.y-R), (b.y+b.h+R)-d.y], k = pen.indexOf(Math.min(...pen));
+          if (k===0) d.x = b.x-R; if (k===1) d.x = b.x+b.w+R; if (k===2) d.y = b.y-R; if (k===3) d.y = b.y+b.h+R;
+          hit(k<2?1:0, k>=2?1:0); return;
+        }
+      }
+    }
+    if (d.range <= 0) d.state = "back";
+  }
+  function update(){
+    d.spin += d.state==="hand" ? 0.03 : 0.55; d.squash *= 0.82;
+    if (d.state === "wind"){
+      d.wind++; const k = Math.sin(Math.min(d.wind/7,1)*Math.PI);
+      d.x = hand.x - d.dirx*14*k; d.y = hand.y - d.diry*14*k;
+      if (d.wind >= 7){ d.state = "out"; d.x = hand.x; d.y = hand.y; d.vx = d.dirx*d.speed; d.vy = d.diry*d.speed; }
+    } else if (d.state === "out") stepOut();
+    else if (d.state === "back"){
+      const dx = hand.x-d.x, dy = hand.y-d.y, dist = Math.hypot(dx,dy);
+      d.speed = Math.min(Math.max(d.speed,10)*1.04, 28);
+      if (dist <= d.speed+4) Object.assign(d, idle(), {squash:.8});
+      else { d.vx = dx/dist*d.speed; d.vy = dy/dist*d.speed; d.x += d.vx; d.y += d.vy; }
+    }
+    if (d.state==="out"||d.state==="back") trail.push({x:d.x,y:d.y,a:1});
+    trail.forEach(p => p.a -= .08); trail = trail.filter(p => p.a > 0);
+  }
+  function tile(img, x, y, w, h, alpha){
+    if (!img.complete || !img.naturalWidth) return;
+    ctx.globalAlpha = alpha;
+    for (let ty=y; ty<y+h; ty+=S) for (let tx=x; tx<x+w; tx+=S) ctx.drawImage(img, tx, ty, S, S);
+    ctx.globalAlpha = 1;
+  }
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    // dim deepslate floor in the play area
+    const fx = Math.floor(arenaL/S)*S;
+    tile(floor, fx, 0, W-fx+S, H+S, .09);
+    if (arenaL){ ctx.fillStyle = "rgba(21,22,25,1)"; ctx.fillRect(0,0,arenaL,H);
+      const g = ctx.createLinearGradient(arenaL-80,0,arenaL+40,0); g.addColorStop(0,"rgba(21,22,25,1)"); g.addColorStop(1,"rgba(21,22,25,0)"); ctx.fillStyle = g; ctx.fillRect(arenaL-80,0,120,H); }
+    for (const b of blocks){
+      tile(brick, b.x, b.y, b.w, b.h, 1);
+      ctx.fillStyle = "rgba(0,0,0,.28)"; ctx.fillRect(b.x, b.y+b.h-4, b.w, 4);
+    }
+    // throw spot
+    ctx.strokeStyle = "rgba(255,255,255,.14)"; ctx.setLineDash([4,6]); ctx.beginPath(); ctx.arc(hand.x,hand.y,30,0,7); ctx.stroke(); ctx.setLineDash([]);
+    const col = TIERS[tierIdx].trail; ctx.lineCap = "round";
+    for (let i=1;i<trail.length;i++){ const a = trail[i-1], b = trail[i];
+      ctx.globalAlpha = b.a*.5; ctx.strokeStyle = col; ctx.lineWidth = 8*b.a; ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke(); }
+    ctx.globalAlpha = 1;
+    const im = imgs[TIERS[tierIdx].id], size = W < 900 ? 40 : 52;
+    ctx.save(); ctx.translate(d.x,d.y);
+    const ang = Math.atan2(d.vy||1e-4, d.vx||1); ctx.rotate(ang);
+    const sq = d.squash*.35; ctx.scale(1-sq, 1+sq*.8); ctx.rotate(-ang + d.spin);
+    if (im.complete && im.naturalWidth) ctx.drawImage(im,-size/2,-size/2,size,size);
+    ctx.restore();
+  }
+  function loop(){
+    if (!visible) { raf = null; return; }
+    update(); draw();
+    if (!reduce && d.state==="hand" && performance.now()-lastInput > 3200){
+      lastInput = performance.now();
+      const b = blocks[Math.floor(Math.random()*blocks.length)];
+      throwAt(b.x+b.w/2+(Math.random()-.5)*b.w, b.y+b.h/2+(Math.random()-.5)*b.h);
+    }
+    raf = requestAnimationFrame(loop);
+  }
+  const fire = e => { const r = cv.getBoundingClientRect(); lastInput = performance.now()+4000; throwAt(e.clientX-r.left, e.clientY-r.top); };
+  cv.addEventListener("pointerdown", fire);
+  document.querySelector(".hero").addEventListener("pointerdown", e => { if (e.target !== cv && !e.target.closest("a,button,p,h1")) fire(e); });
+  new ResizeObserver(layout).observe(cv);
+  new IntersectionObserver(([e]) => { visible = e.isIntersecting; if (visible && !raf) loop(); }).observe(cv);
+  document.addEventListener("visibilitychange", () => { visible = !document.hidden; if (visible && !raf) loop(); });
+  layout(); lastInput = performance.now() - 2400; loop();
+})();
+</script>
+</body>
+</html>
